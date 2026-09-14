@@ -1,0 +1,14 @@
+{
+  "name": "construction-site-intelligence-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-stack Construction Site Intelligence Platform with YOLOv8 PPE detection and grounded GenAI assistant",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix frontend run start",
+    "lint": "npm --prefix frontend run lint",
+    "backend": "python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload --app-dir backend",
+    "seed": "python backend/seed.py"
+  }
+}
