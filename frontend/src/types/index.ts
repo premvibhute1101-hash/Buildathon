@@ -40,6 +40,7 @@ export interface Detection {
 export interface ImageRecord {
   id: string;
   url: string;
+  location_tag?: string;
   ai_label?: 'issue_detected' | 'compliant' | string;
   ai_confidence?: number;
   created_at: string;
@@ -103,3 +104,60 @@ export interface AssistantResponse {
   referenced_report_ids: string[];
   sources?: AssistantSource[];
 }
+
+export interface ComparisonSafetyDiff {
+  before_violations_count: number;
+  after_violations_count: number;
+  diff_count: number;
+  before_classes: string[];
+  after_classes: string[];
+  new_violations: string[];
+  resolved_violations: string[];
+  status_change: 'improved' | 'degraded' | 'stable';
+}
+
+export interface SiteComparison {
+  id: string;
+  project_id: string;
+  project_name?: string;
+  location_tag: string;
+  before_photo_id: string;
+  after_photo_id: string;
+  before_date: string;
+  after_date: string;
+  created_by: string;
+  created_by_name?: string;
+  created_at: string;
+  before_photo: ImageRecord;
+  after_photo: ImageRecord;
+  ai_summary?: string;
+  safety_diff?: ComparisonSafetyDiff;
+}
+
+export interface SiteComparisonListItem {
+  id: string;
+  project_id: string;
+  project_name?: string;
+  location_tag: string;
+  before_photo_id: string;
+  after_photo_id: string;
+  before_photo_url: string;
+  after_photo_url: string;
+  before_date: string;
+  after_date: string;
+  created_at: string;
+  before_ai_label?: string;
+  after_ai_label?: string;
+  before_violations_count: number;
+  after_violations_count: number;
+  ai_summary?: string;
+}
+
+export interface ComparisonPairSuggestion {
+  project_id: string;
+  location_tag: string;
+  before_photo: ImageRecord;
+  after_photo: ImageRecord;
+  date_difference_days: number;
+}
+

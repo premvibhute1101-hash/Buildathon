@@ -53,7 +53,7 @@ export default function DashboardView({
   const [isLoading, setIsLoading] = useState(true);
 
   const loadData = async () => {
-    if (!token) return;
+    if (!token || !user) return;
     setIsLoading(true);
     try {
       const [sumData, recData, repData, sitesData] = await Promise.all([
@@ -74,12 +74,13 @@ export default function DashboardView({
   };
 
   useEffect(() => {
-    if (token) {
+    if (user && token) {
       loadData();
     } else if (!isAuthLoading) {
       setIsLoading(false);
     }
-  }, [token, isAuthLoading]);
+  }, [user, token, isAuthLoading]);
+
 
   if (isAuthLoading) {
     return (

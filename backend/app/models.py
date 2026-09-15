@@ -63,6 +63,7 @@ class Report(Base):
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
     site = relationship("Site", back_populates="reports")
+    user = relationship("User")
     images = relationship("Image", back_populates="report")
 
 class Image(Base):
@@ -71,6 +72,7 @@ class Image(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     report_id = Column(UUID(as_uuid=True), ForeignKey("reports.id"), nullable=False)
     url = Column(String, nullable=False)
+    location_tag = Column(String, nullable=True)
     ai_label = Column(String, nullable=True)
     ai_confidence = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -91,3 +93,22 @@ class Detection(Base):
     bbox_h = Column(Float, nullable=False)
 
     image = relationship("Image", back_populates="detections")
+
+class SiteComparison(Base):
+    __tablename__ = "site_comparisons"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False)
+    location_tag = Column(String, nullable=False)
+    before_photo_id = Column(UUID(as_uuid=True), ForeignKey("images.id"), nullable=False)
+    after_photo_id = Column(UUID(as_uuid=True), ForeignKey("images.id"), nullable=False)
+    before_date = Column(DateTime, nullable=False)
+    after_date = Column(DateTime, nullable=False)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    project = relationship("Project")
+    before_photo = relationship("Image", foreign_keys=[before_photo_id])
+    after_photo = relationship("Image", foreign_keys=[after_photo_id])
+    user = relationship("User", foreign_keys=[created_by])
+

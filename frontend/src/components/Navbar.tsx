@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { HardHat, LogOut, Search, MessageSquareCode, Building2, LayoutDashboard, PlusCircle, Shield, User as UserIcon } from 'lucide-react';
+import { HardHat, LogOut, Search, MessageSquareCode, Building2, LayoutDashboard, PlusCircle, Shield, User as UserIcon, Layers } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -18,9 +18,11 @@ export default function Navbar({ onOpenNewReport, onOpenAssistant }: NavbarProps
   const navLinks = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/projects', label: 'Projects & Sites', icon: Building2 },
+    { href: '/comparisons', label: 'Site Comparisons', icon: Layers },
     { href: '/search', label: 'Search & Reports', icon: Search },
     { href: '/assistant', label: 'AI Site Intelligence', icon: MessageSquareCode },
   ];
+
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-800 bg-slate-950/90 backdrop-blur-md">

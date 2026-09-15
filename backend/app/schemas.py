@@ -76,6 +76,7 @@ class DetectionResponse(BaseModel):
 class ImageResponse(BaseModel):
     id: UUID
     url: str
+    location_tag: Optional[str] = None
     ai_label: Optional[str] = None
     ai_confidence: Optional[float] = None
     created_at: datetime
@@ -123,3 +124,70 @@ class AssistantResponse(BaseModel):
     answer: str
     referenced_report_ids: List[UUID]
     sources: Optional[List[dict]] = []
+
+class SiteComparisonCreate(BaseModel):
+    project_id: UUID
+    location_tag: str
+    before_photo_id: UUID
+    after_photo_id: UUID
+    before_date: Optional[datetime] = None
+    after_date: Optional[datetime] = None
+
+class ComparisonSafetyDiff(BaseModel):
+    before_violations_count: int = 0
+    after_violations_count: int = 0
+    diff_count: int = 0
+    before_classes: List[str] = []
+    after_classes: List[str] = []
+    new_violations: List[str] = []
+    resolved_violations: List[str] = []
+    status_change: str = "stable" # "improved", "degraded", "stable"
+
+class SiteComparisonResponse(BaseModel):
+    id: UUID
+    project_id: UUID
+    project_name: Optional[str] = None
+    location_tag: str
+    before_photo_id: UUID
+    after_photo_id: UUID
+    before_date: datetime
+    after_date: datetime
+    created_by: UUID
+    created_by_name: Optional[str] = None
+    created_at: datetime
+    before_photo: ImageResponse
+    after_photo: ImageResponse
+    ai_summary: Optional[str] = None
+    safety_diff: Optional[ComparisonSafetyDiff] = None
+
+    class Config:
+        from_attributes = True
+
+class SiteComparisonListItem(BaseModel):
+    id: UUID
+    project_id: UUID
+    project_name: Optional[str] = None
+    location_tag: str
+    before_photo_id: UUID
+    after_photo_id: UUID
+    before_photo_url: str
+    after_photo_url: str
+    before_date: datetime
+    after_date: datetime
+    created_at: datetime
+    before_ai_label: Optional[str] = None
+    after_ai_label: Optional[str] = None
+    before_violations_count: int = 0
+    after_violations_count: int = 0
+    ai_summary: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class ComparisonPairSuggestion(BaseModel):
+    project_id: UUID
+    location_tag: str
+    before_photo: ImageResponse
+    after_photo: ImageResponse
+    date_difference_days: int
+

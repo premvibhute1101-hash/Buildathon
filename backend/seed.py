@@ -8,7 +8,7 @@ import shutil
 from pathlib import Path
 
 from app.config import settings
-from app.models import Base, User, Project, Site, Report, Image, Detection, RoleEnum, ProjectStatusEnum, ReportTypeEnum
+from app.models import Base, User, Project, Site, Report, Image, Detection, SiteComparison, RoleEnum, ProjectStatusEnum, ReportTypeEnum
 from app.auth import get_password_hash
 from app.routers.detect import execute_yolo_detection
 
@@ -90,84 +90,99 @@ async def seed_db():
         for s in sites:
             await db.refresh(s)
 
-        # 4. Realistic Report Scenarios
+        # 4. Realistic Report Scenarios with explicit location tags
         report_templates = [
             (
                 sites[1].id, safety_user.id, ReportTypeEnum.inspection,
                 "Safety audit on Area B steel framing. Several workers observed at elevation; flagged missing hardhats near hoist point.",
-                1
+                1,
+                "North Wing — Level 2 Framing"
             ),
             (
                 sites[0].id, supervisor_user.id, ReportTypeEnum.progress,
                 "Concrete pouring for foundation pad section 4 completed ahead of schedule. Core curing temperature normal.",
-                2
+                2,
+                "Basement Foundation — Sector 4"
             ),
             (
                 sites[1].id, safety_user.id, ReportTypeEnum.incident,
                 "Safety violation in Area B: Subcontractor crew entered active crane swing radius without high-visibility vests.",
-                3
+                3,
+                "North Wing — Level 2 Framing"
             ),
             (
                 sites[2].id, supervisor_user.id, ReportTypeEnum.inspection,
                 "Roof perimeter guardrail inspection. East edge netting secure. Weatherproofing membrane installation underway.",
-                4
+                4,
+                "Roof Mechanical Deck — Zone E"
             ),
             (
                 sites[1].id, safety_user.id, ReportTypeEnum.inspection,
                 "Recurring safety issue in Area B: Scaffold platform workers observed without fastened chinstraps and safety gear.",
-                5
+                5,
+                "North Wing — Level 2 Framing"
             ),
             (
                 sites[3].id, contractor_user.id, ReportTypeEnum.progress,
                 "Logistics hub concrete slab polished and joint sealing complete. Ready for rack installation team.",
-                6
+                6,
+                "Main Warehouse Floor — Bay 12"
             ),
             (
                 sites[4].id, safety_user.id, ReportTypeEnum.inspection,
                 "Electrical substation conduit clearance verified. Lockout/tagout protocol strictly observed.",
-                7
+                7,
+                "Substation Vault — Switchgear A"
             ),
             (
                 sites[0].id, supervisor_user.id, ReportTypeEnum.progress,
                 "Basement drainage sump pump installation completed. Waterproofing inspection signed off by engineer.",
-                8
+                8,
+                "Basement Foundation — Sector 4"
             ),
             (
                 sites[1].id, safety_user.id, ReportTypeEnum.inspection,
                 "Area B framing afternoon spot check. Majority of crew compliant; one warning issued for missing safety vest.",
-                9
+                9,
+                "North Wing — Level 2 Framing"
             ),
             (
                 sites[2].id, contractor_user.id, ReportTypeEnum.progress,
                 "HVAC chiller crane lift completed on roof deck. Structural anchor bolts torqued to specification.",
-                10
+                10,
+                "Roof Mechanical Deck — Zone E"
             ),
             (
                 sites[0].id, safety_user.id, ReportTypeEnum.inspection,
                 "Excavation shoring wall deflection test passed. Soil stability monitoring sensors operational.",
-                11
+                11,
+                "Basement Foundation — Sector 4"
             ),
             (
                 sites[1].id, supervisor_user.id, ReportTypeEnum.progress,
                 "Area B third-floor decking installation 80% complete. Rebar reinforcement mesh delivered.",
-                12
+                12,
+                "North Wing — Level 2 Framing"
             ),
             (
                 sites[3].id, supervisor_user.id, ReportTypeEnum.inspection,
                 "Fire suppression sprinkler system pressure test passed in warehouse section.",
-                13
+                13,
+                "Main Warehouse Floor — Bay 12"
             ),
             (
                 sites[1].id, safety_user.id, ReportTypeEnum.incident,
                 "Safety incident logged in Area B: Material hoist gate left open during lunch break. Area secured immediately.",
-                14
+                14,
+                "North Wing — Level 2 Framing"
             )
         ]
 
         # 5. Populate Reports and Process Images with YOLO
+        created_images_by_tag = {}
         img_idx = 0
-        for site_id, user_id, r_type, text, days_ago in report_templates:
-            report_time = datetime.utcnow() - timedelta(days=days_ago, hours=days_ago*2 % 24)
+        for site_id, user_id, r_type, text, days_ago, loc_tag in report_templates:
+            report_time = datetime.utcnow() - timedelta(days=days_ago, hours=(days_ago*2) % 24)
             db_report = Report(
                 site_id=site_id,
                 user_id=user_id,
@@ -195,6 +210,7 @@ async def seed_db():
                 db_img = Image(
                     report_id=db_report.id,
                     url=url,
+                    location_tag=loc_tag,
                     ai_label=detection_res.get("ai_label", "compliant"),
                     ai_confidence=detection_res.get("ai_confidence", 0.90),
                     created_at=report_time
@@ -216,7 +232,60 @@ async def seed_db():
                     db.add(db_det)
                 await db.commit()
 
-        print("Database seeded successfully with authentic YOLO detection outputs!")
+                if loc_tag not in created_images_by_tag:
+                    created_images_by_tag[loc_tag] = []
+                created_images_by_tag[loc_tag].append(db_img)
+
+        # 6. Seed Site Comparisons
+        if "North Wing — Level 2 Framing" in created_images_by_tag and len(created_images_by_tag["North Wing — Level 2 Framing"]) >= 2:
+            imgs = created_images_by_tag["North Wing — Level 2 Framing"]
+            # Sort chronologically
+            imgs = sorted(imgs, key=lambda x: x.created_at)
+            c1 = SiteComparison(
+                project_id=p1.id,
+                location_tag="North Wing — Level 2 Framing",
+                before_photo_id=imgs[0].id,
+                after_photo_id=imgs[-1].id,
+                before_date=imgs[0].created_at,
+                after_date=imgs[-1].created_at,
+                created_by=admin_user.id,
+                created_at=datetime.utcnow() - timedelta(days=1)
+            )
+            db.add(c1)
+
+        if "Roof Mechanical Deck — Zone E" in created_images_by_tag and len(created_images_by_tag["Roof Mechanical Deck — Zone E"]) >= 2:
+            imgs = created_images_by_tag["Roof Mechanical Deck — Zone E"]
+            imgs = sorted(imgs, key=lambda x: x.created_at)
+            c2 = SiteComparison(
+                project_id=p1.id,
+                location_tag="Roof Mechanical Deck — Zone E",
+                before_photo_id=imgs[0].id,
+                after_photo_id=imgs[-1].id,
+                before_date=imgs[0].created_at,
+                after_date=imgs[-1].created_at,
+                created_by=supervisor_user.id,
+                created_at=datetime.utcnow() - timedelta(days=2)
+            )
+            db.add(c2)
+
+        if "Basement Foundation — Sector 4" in created_images_by_tag and len(created_images_by_tag["Basement Foundation — Sector 4"]) >= 2:
+            imgs = created_images_by_tag["Basement Foundation — Sector 4"]
+            imgs = sorted(imgs, key=lambda x: x.created_at)
+            c3 = SiteComparison(
+                project_id=p1.id,
+                location_tag="Basement Foundation — Sector 4",
+                before_photo_id=imgs[0].id,
+                after_photo_id=imgs[-1].id,
+                before_date=imgs[0].created_at,
+                after_date=imgs[-1].created_at,
+                created_by=admin_user.id,
+                created_at=datetime.utcnow() - timedelta(days=3)
+            )
+            db.add(c3)
+
+        await db.commit()
+        print("Database seeded successfully with authentic YOLO detection outputs and Site Comparisons!")
+
 
 if __name__ == "__main__":
     asyncio.run(seed_db())

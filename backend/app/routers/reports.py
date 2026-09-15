@@ -16,12 +16,19 @@ from app.routers.detect import execute_yolo_detection
 router = APIRouter(tags=["reports"])
 
 def format_report_response(report: models.Report) -> dict:
+    user_name = None
+    try:
+        if hasattr(report, "user") and report.user:
+            user_name = report.user.name
+    except Exception:
+        pass
+
     return {
         "id": report.id,
         "site_id": report.site_id,
         "site_name": report.site.name if report.site else None,
         "user_id": report.user_id,
-        "user_name": report.user.name if hasattr(report, "user") and report.user else None,
+        "user_name": user_name,
         "type": report.type,
         "text": report.text,
         "created_at": report.created_at,
@@ -118,6 +125,7 @@ async def create_report(
         select(models.Report)
         .options(
             selectinload(models.Report.site),
+            selectinload(models.Report.user),
             selectinload(models.Report.images).selectinload(models.Image.detections)
         )
         .filter(models.Report.id == db_report.id)
@@ -140,6 +148,7 @@ async def search_reports(
 ):
     query = select(models.Report).options(
         selectinload(models.Report.site),
+        selectinload(models.Report.user),
         selectinload(models.Report.images).selectinload(models.Image.detections)
     )
     
@@ -203,6 +212,7 @@ async def list_reports_for_site(
         date_from=date_from,
         date_to=date_to,
         keyword=keyword,
+        limit=50,
         db=db,
         current_user=current_user
     )
@@ -217,6 +227,7 @@ async def get_report(
         select(models.Report)
         .options(
             selectinload(models.Report.site),
+            selectinload(models.Report.user),
             selectinload(models.Report.images).selectinload(models.Image.detections)
         )
         .filter(models.Report.id == report_id)

@@ -26,7 +26,7 @@ interface ProjectsViewProps {
 }
 
 export default function ProjectsView({ onSelectReport, onOpenNewReport }: ProjectsViewProps) {
-  const { user, token, isLoading: isAuthLoading } = useAuth();
+  const { user, token, isLoading: isAuthLoading, quickDemoLogin } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [sites, setSites] = useState<Site[]>([]);
@@ -46,7 +46,7 @@ export default function ProjectsView({ onSelectReport, onOpenNewReport }: Projec
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadProjects = async () => {
-    if (!token) return;
+    if (!token || !user) return;
     setIsLoading(true);
     try {
       const data = await getProjects();
@@ -62,15 +62,16 @@ export default function ProjectsView({ onSelectReport, onOpenNewReport }: Projec
   };
 
   useEffect(() => {
-    if (token) {
+    if (user && token) {
       loadProjects();
     } else if (!isAuthLoading) {
       setIsLoading(false);
     }
-  }, [token, isAuthLoading]);
+  }, [user, token, isAuthLoading]);
+
 
   useEffect(() => {
-    if (selectedProjectId) {
+    if (selectedProjectId && token) {
       getSites(selectedProjectId)
         .then((sitesData) => {
           setSites(sitesData);
@@ -82,17 +83,17 @@ export default function ProjectsView({ onSelectReport, onOpenNewReport }: Projec
         })
         .catch(console.error);
     }
-  }, [selectedProjectId]);
+  }, [selectedProjectId, token]);
 
   useEffect(() => {
-    if (selectedSiteId) {
+    if (selectedSiteId && token) {
       getReports({ site_id: selectedSiteId })
         .then(setSiteReports)
         .catch(console.error);
     } else {
       setSiteReports([]);
     }
-  }, [selectedSiteId]);
+  }, [selectedSiteId, token]);
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,6 +153,33 @@ export default function ProjectsView({ onSelectReport, onOpenNewReport }: Projec
           Create New Project
         </button>
       </div>
+
+      {!token && !isAuthLoading && (
+        <div className="p-6 rounded-2xl bg-slate-900/90 border border-amber-500/40 text-center space-y-3 shadow-xl">
+          <h2 className="text-base font-bold text-slate-100">Sign in to Access Site Zones & Field Reports</h2>
+          <p className="text-xs text-slate-400">Choose a quick demo profile or sign in to view live project data:</p>
+          <div className="flex flex-wrap justify-center gap-2.5 pt-2">
+            <button
+              onClick={() => quickDemoLogin('admin')}
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20"
+            >
+              Admin (Alexander Vance)
+            </button>
+            <button
+              onClick={() => quickDemoLogin('supervisor')}
+              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700"
+            >
+              Site Supervisor (Marcus Holloway)
+            </button>
+            <button
+              onClick={() => quickDemoLogin('safety')}
+              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700"
+            >
+              Safety Officer (Elena Rostova)
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Projects List Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

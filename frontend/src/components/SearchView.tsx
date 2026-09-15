@@ -25,7 +25,8 @@ interface SearchViewProps {
 }
 
 export default function SearchView({ onSelectReport, initialQuery = '' }: SearchViewProps) {
-  const { token, isLoading: isAuthLoading } = useAuth();
+  const { user, token, isLoading: isAuthLoading } = useAuth();
+
   const [sites, setSites] = useState<Site[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,16 +39,17 @@ export default function SearchView({ onSelectReport, initialQuery = '' }: Search
   const [dateRangePreset, setDateRangePreset] = useState('all');
 
   useEffect(() => {
-    if (token) {
+    if (user && token) {
       getSites().then(setSites).catch(console.error);
     }
-  }, [token]);
+  }, [user, token]);
 
   const executeSearch = async () => {
-    if (!token) {
+    if (!token || !user) {
       setIsLoading(false);
       return;
     }
+
     setIsLoading(true);
     try {
       let date_from: string | undefined;

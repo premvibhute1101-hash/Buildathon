@@ -21,11 +21,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('token');
+    const savedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     if (savedToken) {
-      setToken(savedToken);
       getCurrentUser()
         .then((userData) => {
+          setToken(savedToken);
           setUser(userData);
         })
         .catch(() => {
@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     }
   }, []);
+
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
